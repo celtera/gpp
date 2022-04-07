@@ -9,6 +9,7 @@
 #include <string_view>
 
 // Quick helper macro
+#define halp_flag(flag) enum { flag }
 #define halp_meta(name, value) static consteval auto name() { return value; }
 
 // std::generator is not implemented yet, so polyfill it more or less
@@ -180,7 +181,7 @@ enum class default_attributes
   texcoord,
   color
 };
-
+/*
 enum class default_uniforms
 {
   // Render-level default uniforms
@@ -203,39 +204,77 @@ enum class default_uniforms
 
 
 
-
+*/
 
 
 
 
 // Define our commands
-struct buffer_allocation_action
+struct dynamic_vertex_allocation
 {
-  enum { dynamic_buffer_allocation };
+  enum { allocation, dynamic, vertex };
   int binding;
   int size;
 };
-using buffer_allocation = buffer_allocation_action;
-
-struct buffer_upload_action
+struct dynamic_vertex_upload
 {
-  enum { dynamic_buffer_upload };
+  enum { upload, dynamic, vertex };
   void* handle;
   int offset;
   int size;
   void* data;
 };
-using buffer_upload = buffer_upload_action;
 
-struct texture_upload_action
+struct dynamic_index_allocation
 {
-  enum { texture_upload };
+  enum { allocation, dynamic, index };
+  int binding;
+  int size;
+};
+struct dynamic_index_upload
+{
+  enum { upload, dynamic, index };
   void* handle;
   int offset;
   int size;
   void* data;
 };
-using texture_upload = texture_upload_action;
+
+struct dynamic_ubo_allocation
+{
+  enum { allocation, dynamic, ubo };
+  int binding;
+  int size;
+};
+struct dynamic_ubo_upload
+{
+  enum { upload, dynamic, ubo };
+  void* handle;
+  int offset;
+  int size;
+  void* data;
+};
+
+struct sampler_allocation
+{
+  enum { allocation, sampler };
+};
+struct texture_allocation
+{
+  enum { allocation, texture };
+  int binding;
+  int width;
+  int height;
+};
+
+struct texture_upload
+{
+  enum { upload, texture };
+  void* handle;
+  int offset;
+  int size;
+  void* data;
+};
 
 
 
@@ -243,9 +282,15 @@ using texture_upload = texture_upload_action;
 
 
 // Define what the update() can do
-using action = std::variant<buffer_allocation, buffer_upload, texture_upload>;
+using action = std::variant<
+dynamic_vertex_allocation, dynamic_vertex_upload,
+dynamic_index_allocation, dynamic_index_upload,
+dynamic_ubo_allocation, dynamic_ubo_upload,
+sampler_allocation,
+texture_allocation, texture_upload
+>;
 using handle = void*;
-using update_coroutine = gpu::generator<action, handle>;
+using co_update = gpu::generator<action, handle>;
 
 
 
@@ -255,6 +300,12 @@ using update_coroutine = gpu::generator<action, handle>;
 
 
 // Some utilities
+
+template <typename T>
+consteval int binding()
+{
+  return T::binding();
+}
 template <typename T>
 consteval int std140_size()
 {

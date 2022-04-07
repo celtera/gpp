@@ -7,29 +7,6 @@
 // the parsing code here does not depend on the actual implementation 
 // of the graphics object, only that it follows a certain shape
 
-enum commands
-{
-  static_buffer_allocation,
-  static_buffer_upload,
-  dynamic_buffer_allocation,
-  dynamic_buffer_upload,
-  immutable_buffer_allocation,
-  immutable_buffer_upload,
-  texture_allocation,
-  texture_upload
-};
-
-struct command_indices
-{
-  int buffer_allocation{-1};
-  int buffer_upload;
-  int texture_upload;
-};
-template <typename... Args>
-static constexpr auto command_indices(std::variant<Args...>&&)
-{
-}
-
 struct handle_command
 {
   // If the command type is only variant<buffer_allocation, buffer_upload> then 
@@ -132,11 +109,17 @@ struct write_output
   template<typename T>
   void operator()(const T& field) 
   {
-      shader += fmt::format(
-          "layout(location = {}) out {} {};\n"
-          , field.location()
-          , field_type(field.data)
-          , field.name());
+      if constexpr(requires { field.location(); })
+      {
+      }
+      if constexpr(requires { field.location(); })
+      {
+        shader += fmt::format(
+            "layout(location = {}) out {} {};\n"
+            , field.location()
+            , field_type(field.data)
+            , field.name());
+      }
   }
 };
 
@@ -186,19 +169,21 @@ int main() {
 
     std::string vstr = "#version 450\n\n";
 
-    boost::pfr::for_each_field(ex.layout.vertex_input, write_input{vstr}); 
-    boost::pfr::for_each_field(ex.layout.vertex_output, write_output{vstr});
+    using layout = examples::GpuFilterExample::layout;
+    static constexpr auto lay = layout{};
+    boost::pfr::for_each_field(lay.vertex_input, write_input{vstr}); 
+    boost::pfr::for_each_field(lay.vertex_output, write_output{vstr});
     vstr += "\n"; 
-    boost::pfr::for_each_field(ex.layout.bindings, write_bindings{vstr}); 
+    boost::pfr::for_each_field(lay.bindings, write_bindings{vstr}); 
    
     std::cout << "\n --- Vertex --- \n\n" << vstr << ex.vertex() << std::endl;
 
     std::string fstr = "#version 450\n\n";
 
-    boost::pfr::for_each_field(ex.layout.fragment_input, write_input{fstr}); 
-    boost::pfr::for_each_field(ex.layout.fragment_output, write_output{fstr}); 
+    boost::pfr::for_each_field(lay.fragment_input, write_input{fstr}); 
+    boost::pfr::for_each_field(lay.fragment_output, write_output{fstr}); 
     fstr += "\n";
-    boost::pfr::for_each_field(ex.layout.bindings, write_bindings{fstr}); 
+    boost::pfr::for_each_field(lay.bindings, write_bindings{fstr}); 
   
    std::cout << "\n --- Fragment --- \n\n" << fstr << ex.fragment() << std::endl;
 
