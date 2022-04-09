@@ -7,6 +7,9 @@ namespace examples
 // Define the layout of our pipeline in C++ simply thorugh the structure of a struct
 struct layout
 {
+  // We state that this layout is for a graphics pipeline
+  enum { graphics };
+
   // Define the vertex inputs
   struct vertex_input
   {
@@ -144,8 +147,8 @@ void main()
   std::vector<float> buf;
   std::vector<uint8_t> tex;
 
-  void* buf_handle{};
-  void* tex_handle{};
+  gpu::buffer_handle buf_handle{};
+  gpu::texture_handle tex_handle{};
 
   gpu::co_update update()
   {
@@ -172,13 +175,13 @@ void main()
     };
 
     // Same for the texture
-    int sz = 640*480*4;
+    int sz = 16*16*4;
     if(!tex_handle)
     {
       this->tex_handle = co_yield gpu::texture_allocation{
           .binding = gpu::binding<bindings::sampler>()
-        , .width = 640
-        , .height = 480
+        , .width = 16
+        , .height = 16
       };
     }
 
